@@ -17,28 +17,28 @@ import org.obinject.storage.RTree;
 
 public class AppTestJoin 
 {
-	private static final int sizeOfNode = 16384;
+    private static final int sizeOfNode = 16384;
 
-	public static void deleteFiles()
-	{
-		java.io.File arquivo = new java.io.File("rtreeGeonet1-" + sizeOfNode + ".dat");
-		if(arquivo.exists())
-		{
-			arquivo.delete();
-			System.out.println("Arquivo rtreGeonet1 deletado.");
-		}
-		
-		arquivo = new java.io.File("rtreeGeonet2-" + sizeOfNode + ".dat");
-		if(arquivo.exists())
-		{
-			arquivo.delete();
-			System.out.println("Arquivo rtreGeonet2 deletado.");
-		}
-	}
-	
-	public static void main(String[] args) throws FileNotFoundException, IOException
-	{
-		System.out.println(new Date());
+    public static void deleteFiles()
+    {
+        java.io.File arquivo = new java.io.File("rtreeGeonet1-" + sizeOfNode + ".dat");
+        if(arquivo.exists())
+        {
+            arquivo.delete();
+            System.out.println("Arquivo rtreGeonet1 deletado.");
+        }
+        
+        arquivo = new java.io.File("rtreeGeonet2-" + sizeOfNode + ".dat");
+        if(arquivo.exists())
+        {
+            arquivo.delete();
+            System.out.println("Arquivo rtreGeonet2 deletado.");
+        }
+    }
+    
+    public static void main(String[] args) throws FileNotFoundException, IOException
+    {
+        System.out.println(new Date());
         int count = 0;
         RectLatLongCoordGeonet metric = new RectLatLongCoordGeonet();
         deleteFiles();
@@ -59,8 +59,8 @@ public class AppTestJoin
             metric.setOrigin(1, Double.parseDouble(tok.nextToken()));
             rtree1.add(metric);
             
-			if(count++ % 1000 == 0) 
-				System.out.println(count);
+            if(count++ % 1000 == 0) 
+                System.out.println(count);
         }
         
         in.close();
@@ -83,8 +83,8 @@ public class AppTestJoin
             metric.setOrigin(1, Double.parseDouble(tok.nextToken()));
             rtree2.add(metric);
             
-			if(count++ % 1000 == 0) 
-				System.out.println(count);
+            if(count++ % 1000 == 0) 
+                System.out.println(count);
         }
         
         in.close();
@@ -111,7 +111,7 @@ public class AppTestJoin
         check.close();
         
         if(notFound == 0)
-        	System.out.println("Todos os dados foram encontrados na Árvore R 1.");
+            System.out.println("Todos os dados foram encontrados na Árvore R 1.");
         
         
         // Conferência da inserção na R-tree 1
@@ -134,7 +134,7 @@ public class AppTestJoin
         check.close();
         
         if(notFound == 0)
-        	System.out.println("Todos os dados foram encontrados na Árvore R 2.");
+            System.out.println("Todos os dados foram encontrados na Árvore R 2.");
         
         // Testar Basic Join
         System.out.println("Realizando o Join entre as duas árvores.");
@@ -144,7 +144,7 @@ public class AppTestJoin
         System.out.println("result.size(): " + result.size() + "\n");
         System.out.println("20 primeiras linhas de result: ");
         for(int i = 0; i < 20; i++)
-			System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
-		
-	}
+            System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
+        
+    }
 }
