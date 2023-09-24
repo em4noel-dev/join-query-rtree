@@ -138,55 +138,41 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             intersecao = trio.getThird();
             Node nodeRtree1 = se1.load(pageId1);
             Node nodeRtree2 = se2.load(pageId2);
-        
-            if (RTreeIndex.matchNodeType(nodeRtree2)) // Então nodeRtree1 também é um nó índice.
+            
+            RTreeNode<R> gerericNodeRtree1 = new RTreeNode<>(nodeRtree1, this.rtree1.getObjectClass());
+            RTreeNode<R> gerericNodeRtree2 = new RTreeNode<>(nodeRtree2, this.rtree2.getObjectClass());
+            overlap = 0;
+            
+            // Restringindo espaço de busca
+            ArrayList<Pair<R, Integer>> entradasRtree1 = restringirEspacoBusca(intersecao, gerericNodeRtree1);
+            ArrayList<Pair<R, Integer>> entradasRtree2 = restringirEspacoBusca(intersecao, gerericNodeRtree2);
+            
+            for (int i = 0; i < entradasRtree2.size(); i++) 
             {
-                RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
-                RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
-                overlap = 0;
-                
-                // Restringindo espaço de busca
-                ArrayList<Pair<R, Integer>> entradasRtree1 = restringirEspacoBusca(intersecao, indexRtree1);
-                ArrayList<Pair<R, Integer>> entradasRtree2 = restringirEspacoBusca(intersecao, indexRtree2);
-                
-                for (int i = 0; i < entradasRtree2.size(); i++) 
+                storedKeyRtree2 = entradasRtree2.get(i).getFirst();
+                for (int j = 0; j < entradasRtree1.size(); j++) 
                 {
-                    storedKeyRtree2 = entradasRtree2.get(i).getFirst();
-                    for (int j = 0; j < entradasRtree1.size(); j++) 
+                    storedKeyRtree1 = entradasRtree1.get(j).getFirst();
+                    if(this.rtree2.geometry.isOverlap(storedKeyRtree2, storedKeyRtree1)) 
                     {
-                        storedKeyRtree1 = entradasRtree1.get(j).getFirst();
-                        if(this.rtree2.geometry.isOverlap(storedKeyRtree2, storedKeyRtree1)) 
+                        if (RTreeIndex.matchNodeType(nodeRtree2))
                         {
+                            RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
+                            RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
                             intersecao = this.rtree2.geometry.intersection(storedKeyRtree2, storedKeyRtree1);
                             qualifies.add(qualifies.size() - overlap, new Triple<Long, Long, R>(indexRtree1.readSubPageId(entradasRtree1.get(j).getSecond()), indexRtree2.readSubPageId(entradasRtree2.get(i).getSecond()), intersecao));
-                            overlap++;
+                            overlap++;                            
                         }
-                    }            
-                }
-            }
-            else // nodeRtree1 e nodeRtree2 são nós folha.
-            {
-                RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
-                RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
-                
-                // Restringindo espaço de busca
-                ArrayList<Pair<R, Integer>> entradasRtree1 = restringirEspacoBusca(intersecao, leafRtree1);
-                ArrayList<Pair<R, Integer>> entradasRtree2 = restringirEspacoBusca(intersecao, leafRtree2);
-
-                for (int i = 0; i < entradasRtree2.size(); i++) 
-                {
-                    storedKeyRtree2 = entradasRtree2.get(i).getFirst();
-                    for (int j = 0; j < entradasRtree1.size(); j++) 
-                    {
-                        storedKeyRtree1 = entradasRtree1.get(j).getFirst();
-                        if(this.rtree2.geometry.isOverlap(storedKeyRtree2, storedKeyRtree1)) 
+                        else
                         {
+                            RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
+                            RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
                             Uuid uuidRtree1 = leafRtree1.readEntityUuid(entradasRtree1.get(j).getSecond());
                             Uuid uuidRtree2 = leafRtree2.readEntityUuid(entradasRtree2.get(i).getSecond());
                             result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
                         }
                     }
-                }
+                }            
             }            
         }
         while(!qualifies.isEmpty());
