@@ -45,7 +45,7 @@ import org.obinject.meta.Rectangle;
  * @author Luiz Olmes Carvalho <olmes@icmc.usp.br>
  * @author Thatyana de Faria Piola Seraphim <thatyana@unifei.edu.br>
  */
-public abstract class RTreeNode<K extends Rectangle<K> & Entity<? super K>> extends KeyNode<K>
+public class RTreeNode<K extends Rectangle<K> & Entity<? super K>> extends KeyNode<K>
 {
 
     /**
@@ -177,7 +177,12 @@ public abstract class RTreeNode<K extends Rectangle<K> & Entity<? super K>> exte
      *
      * @return
      */
-    protected abstract int sizeOfEntry();
+    // protected abstract int sizeOfEntry();
+    protected int sizeOfEntry() 
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
 
     /**
      *
@@ -186,5 +191,11 @@ public abstract class RTreeNode<K extends Rectangle<K> & Entity<? super K>> exte
     protected final int sizeOfFeatures()
     {
 	return RTreeNode.sizeOfInteger; // number of keys
+    }
+
+    @Override
+    protected int getNodeType() {
+        // TODO Auto-generated method stub
+        return 0;
     }
 }

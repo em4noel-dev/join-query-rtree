@@ -138,7 +138,7 @@ public class AppTestJoin
         // Testar Basic Join
         System.out.println("Realizando o Join Básico entre as duas árvores.");
         JoinQueries<RectLatLongCoordGeonet> joinQuery = new JoinQueries<>(rtree1, rtree2);
-        ArrayList<Pair<String, String>> result = joinQuery.basicJoinSameHeight();
+        ArrayList<Pair<String, String>> result = joinQuery.basicJoin();
         
         System.out.println("result.size(): " + result.size() + "\n");
         System.out.println("20 primeiras linhas de result: ");
@@ -153,6 +153,6 @@ public class AppTestJoin
         System.out.println("20 primeiras linhas de result: ");
         for(int i = 0; i < 20; i++)
             System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
-        
+               
     }
 }

@@ -19,6 +19,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
     private RTree<R> rtree1;
     private RTree<R> rtree2;
     
+    // Ambas devem ter a mesma altura.
     public JoinQueries(RTree<R> rtree1, RTree<R> rtree2) 
     {
         this.rtree1 = rtree1;
@@ -41,7 +42,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         return entradasRtree;
     }
     
-    public ArrayList<Pair<String, String>> basicJoinSameHeight()
+    public ArrayList<Pair<String, String>> basicJoin()
     {
         // R-tree 1
         Session se1 = this.rtree1.getWorkspace().openSession();
@@ -70,49 +71,37 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             Node nodeRtree1 = se1.load(pageId1);
             Node nodeRtree2 = se2.load(pageId2);
             
-            if (RTreeIndex.matchNodeType(nodeRtree2)) // Então nodeRtree1 também é um nó índice.
+            RTreeNode<R> gerericNodeRtree1 = new RTreeNode<>(nodeRtree1, this.rtree1.getObjectClass());
+            RTreeNode<R> gerericNodeRtree2 = new RTreeNode<>(nodeRtree2, this.rtree2.getObjectClass());
+            int totalEntriesRtree1 = gerericNodeRtree1.readNumberOfKeys();
+            int totalEntriesRtree2 = gerericNodeRtree2.readNumberOfKeys();
+            overlap = 0;
+            
+            for (int i = 0; i < totalEntriesRtree2; i++) 
             {
-                RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
-                RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
-                int totalEntriesRtree1 = indexRtree1.readNumberOfKeys();
-                int totalEntriesRtree2 = indexRtree2.readNumberOfKeys();
-                overlap = 0;
-                
-                for (int i = 0; i < totalEntriesRtree2; i++) 
+                storedKeyRtree2 = gerericNodeRtree2.buildKey(i);
+                for (int j = 0; j < totalEntriesRtree1; j++) 
                 {
-                    storedKeyRtree2 = indexRtree2.buildKey(i);
-                    for (int j = 0; j < totalEntriesRtree1; j++) 
+                    storedKeyRtree1 = gerericNodeRtree1.buildKey(j);
+                    if(this.rtree2.geometry.isOverlap(storedKeyRtree2, storedKeyRtree1)) 
                     {
-                        storedKeyRtree1 = indexRtree1.buildKey(j);
-                        if(this.rtree2.geometry.isOverlap(storedKeyRtree2, storedKeyRtree1)) 
+                        if (RTreeIndex.matchNodeType(nodeRtree2)) // Então nodeRtree1 também é um nó índice.
                         {
+                            RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
+                            RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
                             qualifies.add(qualifies.size() - overlap, new Pair<Long, Long>(indexRtree1.readSubPageId(j), indexRtree2.readSubPageId(i)));
                             overlap++;
                         }
-                    }            
-                }
-            }
-            else // nodeRtree1 e nodeRtree2 são nós folha.
-            {
-                RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
-                RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
-                int totalEntriesRtree1 = leafRtree1.readNumberOfKeys();
-                int totalEntriesRtree2 = leafRtree2.readNumberOfKeys();
-                
-                for (int i = 0; i < totalEntriesRtree2; i++) 
-                {
-                    storedKeyRtree2 = leafRtree2.buildKey(i);
-                    for (int j = 0; j < totalEntriesRtree1; j++) 
-                    {
-                        storedKeyRtree1 = leafRtree1.buildKey(j);
-                        if(this.rtree2.geometry.isOverlap(storedKeyRtree2, storedKeyRtree1)) 
+                        else // nodeRtree1 e nodeRtree2 são nós folha.
                         {
+                            RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
+                            RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
                             Uuid uuidRtree1 = leafRtree1.readEntityUuid(j);
                             Uuid uuidRtree2 = leafRtree2.readEntityUuid(i);
                             result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
-                        }
+                        } 
                     }
-                }
+                }            
             }
         }
         while(!qualifies.isEmpty());
