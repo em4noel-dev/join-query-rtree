@@ -69,7 +69,7 @@ public class EuclideanGeometry<K extends Rectangle<K> & Entity<? super K>> {
         double coord2;
         K mbrUnion = this.newGenericType();
         calculatedOverlap++;
-
+        
         for (int i = 0; i < dims; i++) {
             coord1 = rect1.getOrigin(i);
             coord2 = rect2.getOrigin(i);
@@ -79,6 +79,32 @@ public class EuclideanGeometry<K extends Rectangle<K> & Entity<? super K>> {
             mbrUnion.setExtension(i, maxPoint[i] - minPoint[i] + this.precisionError);
         }
         return mbrUnion;
+    }
+    
+    public K intersection(K rect1, K rect2)
+    {
+        int dims = rect1.numberOfDimensions();
+        double[] minPoint = new double[dims];
+        double[] maxPoint = new double[dims];
+        double coord1;
+        double coord2;
+        K mbrIntersection = this.newGenericType();
+        
+        for (int i = 0; i < dims; i++) 
+        {
+            coord1 = rect1.getOrigin(i);
+            coord2 = rect2.getOrigin(i);
+            minPoint[i] = Math.max(coord1, coord2);
+            maxPoint[i] = Math.min(coord1 + rect1.getExtension(i), coord2 + rect2.getExtension(i));
+            
+            if(minPoint[i] >= maxPoint[i])
+                return null;
+            
+            mbrIntersection.setOrigin(i, minPoint[i]);
+            mbrIntersection.setExtension(i, maxPoint[i] - minPoint[i] + this.precisionError);
+        }
+        
+        return mbrIntersection;
     }
 
     /**

@@ -41,14 +41,14 @@ public class AppTestJoin
         System.out.println(new Date());
         int count = 0;
         RectLatLongCoordGeonet metric = new RectLatLongCoordGeonet();
+        String nomeArq = AddFindGeonetRTree.class.getClassLoader().getResource("geonet_simplificado.txt").getFile();
+        String nomeArq2 = AddFindGeonetRTree.class.getClassLoader().getResource("geonet_simplificado.txt").getFile();
         deleteFiles();
         
         // Inserção na R-tree 1
         System.out.println("Inserindo na R-tree 1.");
         File workspace = new File("rtreeGeonet1-" + sizeOfNode + ".dat", sizeOfNode);        
         RTree<RectLatLongCoordGeonet> rtree1 = new RTree<RectLatLongCoordGeonet>(workspace){};
-        String nomeArq = AddFindGeonetRTree.class.getClassLoader().getResource("geonet_pequeno.txt").getFile();
-        
         BufferedReader in = new BufferedReader(new FileReader(nomeArq));
         
         while(in.ready() == true)
@@ -68,12 +68,11 @@ public class AppTestJoin
         System.gc();
         
         // Inserção na R-tree 2
-        nomeArq = AddFindGeonetRTree.class.getClassLoader().getResource("geonet_pequeno2.txt").getFile();
         System.out.println("Inserindo na R-tree 2.");
         count = 0;
         File workspace2 = new File("rtreeGeonet2-" + sizeOfNode + ".dat", sizeOfNode);
         RTree<RectLatLongCoordGeonet> rtree2 = new RTree<RectLatLongCoordGeonet>(workspace2){};
-        in = new BufferedReader(new FileReader(nomeArq));
+        in = new BufferedReader(new FileReader(nomeArq2));
       
         while (in.ready() == true)
         {
@@ -114,9 +113,9 @@ public class AppTestJoin
             System.out.println("Todos os dados foram encontrados na Árvore R 1.");
         
         
-        // Conferência da inserção na R-tree 1
+        // Conferência da inserção na R-tree 2
         System.out.println("Conferindo se todos os dados foram inseridos corretamente na Rtree-2.");
-        check = new BufferedReader(new FileReader(nomeArq));
+        check = new BufferedReader(new FileReader(nomeArq2));
 
         notFound = 0;
         count = 0;
@@ -137,9 +136,18 @@ public class AppTestJoin
             System.out.println("Todos os dados foram encontrados na Árvore R 2.");
         
         // Testar Basic Join
-        System.out.println("Realizando o Join entre as duas árvores.");
+        System.out.println("Realizando o Join Básico entre as duas árvores.");
         JoinQueries<RectLatLongCoordGeonet> joinQuery = new JoinQueries<>(rtree1, rtree2);
         ArrayList<Pair<String, String>> result = joinQuery.basicJoinSameHeight();
+        
+        System.out.println("result.size(): " + result.size() + "\n");
+        System.out.println("20 primeiras linhas de result: ");
+        for(int i = 0; i < 20; i++)
+            System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
+        
+        // Testar Basic Join com Restrição do Espaço de Busca
+        System.out.println("\nRealizando o Join Básico com Restrição do Espaço de Busca entre as duas árvores.");
+        result = joinQuery.basicJoinRestringindoEspacoBusca();
         
         System.out.println("result.size(): " + result.size() + "\n");
         System.out.println("20 primeiras linhas de result: ");
