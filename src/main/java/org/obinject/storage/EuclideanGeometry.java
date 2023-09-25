@@ -129,36 +129,21 @@ public class EuclideanGeometry<K extends Rectangle<K> & Entity<? super K>> {
      * @param rectOverlaped
      * @return
      */
-    public boolean isOverlap(K rectOverlap, K rectOverlaped) {
+    public boolean isOverlap(K rectOverlap, K rectOverlaped) 
+    {
         int dims = rectOverlap.numberOfDimensions();
         calculatedOverlap++;
-//    return this.x < r.x + r.width && 
-//           this.x + width > r.x && 
-//           this.y < r.y + r.height && 
-//           this.y + height > r.y;
-        for (int i = 0; i < dims; i++) {
-            if (rectOverlap.getOrigin(i) > rectOverlaped.getOrigin(i) + rectOverlaped.getExtension(i) ) {
+
+        for (int i = 0; i < dims; i++) 
+        {
+            if (rectOverlap.getOrigin(i) > rectOverlaped.getOrigin(i) + rectOverlaped.getExtension(i))
                 return false;
-            }
-            if (rectOverlap.getOrigin(i) + rectOverlap.getExtension(i) < rectOverlaped.getOrigin(i)) {
+            
+            if (rectOverlap.getOrigin(i) + rectOverlap.getExtension(i) < rectOverlaped.getOrigin(i)) 
                 return false;
-            }
         }
 
         return true;
-    }
-    
-    public boolean isOverlap2(K rectOverlap, K rectOverlaped) {
-        int dims = rectOverlap.numberOfDimensions();
-        calculatedOverlap++;
-//    return this.x < r.x + r.width && 
-//           this.x + width > r.x && 
-//           this.y < r.y + r.height && 
-//           this.y + height > r.y;
-        if(rectOverlap.getOrigin(0) == rectOverlaped.getOrigin(0) && rectOverlap.getOrigin(1) == rectOverlaped.getOrigin(1))
-        return true;
-        else
-           return false;
     }
 
     /**
