@@ -153,6 +153,15 @@ public class AppTestJoin
         System.out.println("20 primeiras linhas de result: ");
         for(int i = 0; i < 20; i++)
             System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
+        
+        // Testar Join plane sweep order
+        System.out.println("\nRealizando o Join local sweep order.");
+        result = joinQuery.joinPlaneSweep();
+        
+        System.out.println("result.size(): " + result.size() + "\n");
+        System.out.println("20 primeiras linhas de result: ");
+        for(int i = 0; i < 20; i++)
+            System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
                
     }
 }
