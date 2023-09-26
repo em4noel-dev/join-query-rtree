@@ -141,9 +141,9 @@ public class AppTestJoin
         System.out.println("result.size(): " + result.size() + "\n");
                 
         // Test local z-order join
-        // System.out.println("Local z-order join: ");
-        // result = joinQuery.joinZorder();
-        // System.out.println("result.size(): " + result.size() + "\n");
+        System.out.println("Local z-order join: ");
+        result = joinQuery.joinZorder();
+        System.out.println("result.size(): " + result.size() + "\n");
    
         // System.out.println("20 primeiras linhas de result: ");
         // for(int i = 0; i < 20; i++)

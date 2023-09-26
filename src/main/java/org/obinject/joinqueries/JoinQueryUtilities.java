@@ -32,7 +32,7 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         return entradasRtree;
     }
         
-    public ArrayList<Pair<Pair<R, Integer>, Pair<R, Integer>>> planeSweep(ArrayList<Pair<R, Integer>> mbrsRtree1, ArrayList<Pair<R, Integer>> mbrsRtree2)
+    public ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> planeSweep(ArrayList<Pair<R, Integer>> mbrsRtree1, ArrayList<Pair<R, Integer>> mbrsRtree2, boolean zorder)
     {
         int totalEntries1 = mbrsRtree1.size();
         int totalEntries2 = mbrsRtree2.size();
@@ -43,18 +43,18 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         mbrsRtree1.sort((o1, o2) -> Double.compare(o1.getFirst().getOrigin(0), o2.getFirst().getOrigin(0)));
         mbrsRtree2.sort((o1, o2) -> Double.compare(o1.getFirst().getOrigin(0), o2.getFirst().getOrigin(0)));
 
-        ArrayList<Pair<Pair<R, Integer>, Pair<R, Integer>>> saida = new ArrayList<>();
+        ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> saida = new ArrayList<>();
 
         while(i < totalEntries1 && j < totalEntries2)
         {
             if(mbrsRtree1.get(i).getFirst().getOrigin(0) <= mbrsRtree2.get(j).getFirst().getOrigin(0))
             {
-                loopInterno(mbrsRtree1.get(i), j, mbrsRtree2, saida, true);
+                loopInterno(mbrsRtree1.get(i), j, mbrsRtree2, saida, true, zorder);
                 i++;
             }
             else
             {
-                loopInterno(mbrsRtree2.get(j), i, mbrsRtree1, saida, false);
+                loopInterno(mbrsRtree2.get(j), i, mbrsRtree1, saida, false, zorder);
                 j++;
             }
         }  
@@ -62,7 +62,7 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         return saida;
     }
     
-    private void loopInterno(Pair<R, Integer> t, int naoMarcado, ArrayList<Pair<R, Integer>> rs, ArrayList<Pair<Pair<R, Integer>, Pair<R, Integer>>> saida, Boolean primeiroLoop)
+    private void loopInterno(Pair<R, Integer> t, int naoMarcado, ArrayList<Pair<R, Integer>> rs, ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> saida, boolean primeiroLoop, boolean zorder)
     {
         int k = naoMarcado;
         int totalEntries = rs.size();
@@ -90,13 +90,40 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
                 
             if(interceptaTodasDimensoes)
             {
-                if(primeiroLoop)
-                    saida.add(new Pair<>(t, rs.get(k)));
+                Long zOrderUnidimensional;
+                if(zorder)
+                {
+                    zOrderUnidimensional = 0L;
+                    R intersecao = this.geometry.intersection(t.getFirst(), rs.get(k).getFirst());
+                    zOrderUnidimensional = zOrder(intersecao, dims);
+                }
                 else
-                    saida.add(new Pair<>(rs.get(k), t));
+                    zOrderUnidimensional = null;
+                
+                if(primeiroLoop)
+                    saida.add(new Triple<>(t, rs.get(k), zOrderUnidimensional));
+                else
+                    saida.add(new Triple<>(rs.get(k), t, zOrderUnidimensional));
             }
             k++;
         }
+    }
+    
+    private Long zOrder(R intersecao, int dims) 
+    {
+        Long resultado = 0L;
+        int numBits = 64, aux = 0;
+        long coordenada;
+
+        for (int bit = 0; bit < numBits; bit++) 
+        {
+            coordenada = (long)((Math.abs(intersecao.getOrigin(bit % dims)*2) + intersecao.getExtension(bit % dims))/2.0); // Centro do retangulo de intersecao (Truncar parte fracionaria)
+            resultado |= (coordenada & (1L << aux)) << (bit - aux);
+            if((bit + 1) % dims == 0)
+                aux++;
+        }
+
+        return resultado;
     }
     
     public EuclideanGeometry<R> getGeometry() 

@@ -33,7 +33,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         setup();
     }
     
-    public void setup()
+    private void setup()
     {
     	// R-tree 1
         this.se1 = this.rtree1.getWorkspace().openSession();
@@ -195,7 +195,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             ArrayList<Pair<R, Integer>> entradasRtree2 = joinUtilities.restringirEspacoBusca(intersecao, gerericNodeRtree2);
             
             // Aplicando o plane sweep order + Ordena��o
-            ArrayList<Pair<Pair<R, Integer>, Pair<R, Integer>>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2);
+            ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2, false);
             
             for(int i = 0; i < paresRetangulos.size(); i++)
             {
@@ -252,7 +252,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             ArrayList<Pair<R, Integer>> entradasRtree2 = joinUtilities.restringirEspacoBusca(intersecao, gerericNodeRtree2);
             
             // Aplicando o plane sweep order + Ordena��o
-            ArrayList<Pair<Pair<R, Integer>, Pair<R, Integer>>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2);
+            ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2, false);
             int totalPares = paresRetangulos.size();
             boolean[] visitado = new boolean[totalPares];
             
@@ -260,7 +260,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             {
                 if(!visitado[i])
             	{
-                    Pair<Pair<R, Integer>, Pair<R, Integer>> par = paresRetangulos.get(i);
+                    Triple<Pair<R, Integer>, Pair<R, Integer>, Long> par = paresRetangulos.get(i);
             	    if (RTreeIndex.matchNodeType(nodeRtree2))
             	    {
             	        RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
@@ -317,6 +317,112 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             	        result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
                     }
             	}
+            }
+        }
+        while(!qualifies.isEmpty());
+        
+        return result;
+    }
+
+    // Obsevacao em relacao a numeros decimais e negativos.
+    public ArrayList<Pair<String, String>> joinZorder()
+    {
+        Stack<Triple<Long, Long, R>> qualifies = new Stack<>();
+        qualifies.push(new Triple<Long, Long, R>(this.descriptor1.readRootPageId(), this.descriptor2.readRootPageId(), null));
+
+        int overlap;
+        long pageId1, pageId2;
+        R intersecao;
+        
+        ArrayList<Pair<String, String>> result = new ArrayList<>();
+        
+        do
+        {
+            Triple<Long, Long, R> trio = qualifies.pop();
+            pageId1 = trio.getFirst();
+            pageId2 = trio.getSecond();
+            intersecao = trio.getThird();
+            Node nodeRtree1 = se1.load(pageId1);
+            Node nodeRtree2 = se2.load(pageId2);
+            
+            RTreeNode<R> gerericNodeRtree1 = new RTreeNode<>(nodeRtree1, this.rtree1.getObjectClass());
+            RTreeNode<R> gerericNodeRtree2 = new RTreeNode<>(nodeRtree2, this.rtree2.getObjectClass());
+            overlap = 0;
+            
+            // Restringindo espaco de busca
+            ArrayList<Pair<R, Integer>> entradasRtree1 = joinUtilities.restringirEspacoBusca(intersecao, gerericNodeRtree1);
+            ArrayList<Pair<R, Integer>> entradasRtree2 = joinUtilities.restringirEspacoBusca(intersecao, gerericNodeRtree2);
+            
+            // Aplicando o plane sweep order + Ordenacao
+            ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2, true);
+            
+            // Z-ordering
+            paresRetangulos.sort((o1, o2) -> Long.compare(o1.getThird(), o2.getThird()));
+            
+            int totalPares = paresRetangulos.size();
+            boolean[] visitado = new boolean[totalPares];
+            
+            for(int i = 0; i < totalPares; i++)
+            {
+                if(!visitado[i])
+                {
+                    Triple<Pair<R, Integer>, Pair<R, Integer>, Long> par = paresRetangulos.get(i);
+                    if (RTreeIndex.matchNodeType(nodeRtree2))
+                    {
+                        RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
+                        RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
+                        intersecao = this.joinUtilities.getGeometry().intersection(par.getSecond().getFirst(), par.getFirst().getFirst());
+                        qualifies.add(qualifies.size() - overlap, new Triple<Long, Long, R>(indexRtree1.readSubPageId(par.getFirst().getSecond()), indexRtree2.readSubPageId(par.getSecond().getSecond()), intersecao));
+                        overlap++;
+                        visitado[i] = true;
+                        
+                        // Calcular grau das entradas
+                        int grauEntrada1 = 0, grauEntrada2 = 0;
+                        for(int j = i + 1; j < paresRetangulos.size(); j++)
+                        {
+                            if(par.getFirst() == paresRetangulos.get(j).getFirst())
+                                grauEntrada1++;
+
+                            if(par.getSecond() == paresRetangulos.get(j).getSecond())
+                                grauEntrada2++;             
+                        }
+
+                        if(grauEntrada1 >= grauEntrada2)
+                        {
+                            for(int j = i + 1; j < paresRetangulos.size(); j++)
+                            {
+                                if(!visitado[j] && par.getFirst() == paresRetangulos.get(j).getFirst())
+                                {
+                                    intersecao = this.joinUtilities.getGeometry().intersection(par.getFirst().getFirst(), paresRetangulos.get(j).getSecond().getFirst());
+                                    qualifies.add(qualifies.size() - overlap, new Triple<Long, Long, R>(indexRtree1.readSubPageId(par.getFirst().getSecond()), indexRtree2.readSubPageId(paresRetangulos.get(j).getSecond().getSecond()), intersecao));
+                                    overlap++;
+                                    visitado[j] = true;               
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for(int k = i + 1; k < paresRetangulos.size(); k++)
+                            {
+                                if(!visitado[k] && par.getSecond() == paresRetangulos.get(k).getSecond())
+                                {                                   
+                                    intersecao = this.joinUtilities.getGeometry().intersection(par.getSecond().getFirst(), paresRetangulos.get(k).getFirst().getFirst());
+                                    qualifies.add(qualifies.size() - overlap, new Triple<Long, Long, R>(indexRtree1.readSubPageId(paresRetangulos.get(k).getFirst().getSecond()), indexRtree2.readSubPageId(par.getSecond().getSecond()), intersecao));
+                                    overlap++;
+                                    visitado[k] = true;               
+                                }    
+                            }
+                        }
+                    }
+                    else
+                    {
+                        RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
+                        RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
+                        Uuid uuidRtree1 = leafRtree1.readEntityUuid(paresRetangulos.get(i).getFirst().getSecond());
+                        Uuid uuidRtree2 = leafRtree2.readEntityUuid(paresRetangulos.get(i).getSecond().getSecond());
+                        result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
+                    }
+                }
             }
         }
         while(!qualifies.isEmpty());

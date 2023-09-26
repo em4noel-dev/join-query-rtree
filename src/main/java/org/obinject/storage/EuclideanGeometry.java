@@ -89,7 +89,7 @@ public class EuclideanGeometry<K extends Rectangle<K> & Entity<? super K>> {
         double coord1;
         double coord2;
         K mbrIntersection = this.newGenericType();
-        
+              
         for (int i = 0; i < dims; i++) 
         {
             coord1 = rect1.getOrigin(i);
@@ -97,7 +97,7 @@ public class EuclideanGeometry<K extends Rectangle<K> & Entity<? super K>> {
             minPoint[i] = Math.max(coord1, coord2);
             maxPoint[i] = Math.min(coord1 + rect1.getExtension(i), coord2 + rect2.getExtension(i));
             
-            if(minPoint[i] >= maxPoint[i])
+            if(minPoint[i] > maxPoint[i])
                 return null;
             
             mbrIntersection.setOrigin(i, minPoint[i]);
