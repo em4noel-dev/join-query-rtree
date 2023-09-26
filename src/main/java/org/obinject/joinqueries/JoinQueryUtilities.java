@@ -13,10 +13,10 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
 
 	public JoinQueryUtilities(EuclideanGeometry<R> geometry)
 	{
-		this.geometry = geometry;
+	    this.geometry = geometry;
 	}
 	
-	public ArrayList<Pair<R, Integer>> restringirEspacoBusca(R intersecao, RTreeNode<R> nodeRtree)
+    public ArrayList<Pair<R, Integer>> restringirEspacoBusca(R intersecao, RTreeNode<R> nodeRtree)
     {
         ArrayList<Pair<R, Integer>> entradasRtree = new ArrayList<>();
         int totalEntriesRtree = nodeRtree.readNumberOfKeys();
@@ -89,21 +89,23 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
             }
                 
             if(interceptaTodasDimensoes)
+            {
                 if(primeiroLoop)
                     saida.add(new Pair<>(t, rs.get(k)));
                 else
                     saida.add(new Pair<>(rs.get(k), t));
+            }
             k++;
         }
     }
     
     public EuclideanGeometry<R> getGeometry() 
     {
-		return geometry;
-	}
+        return geometry;
+    }
 
-	public void setGeometry(EuclideanGeometry<R> geometry) 
-	{
-		this.geometry = geometry;
-	}
+    public void setGeometry(EuclideanGeometry<R> geometry) 
+    {
+        this.geometry = geometry;
+    }
 }
