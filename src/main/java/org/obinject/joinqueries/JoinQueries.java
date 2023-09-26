@@ -31,7 +31,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         setup();
     }
     
-	public void setup()
+    public void setup()
     {
     	// R-tree 1
         this.se1 = this.rtree1.getWorkspace().openSession();
@@ -257,12 +257,12 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             
             for(int i = 0; i < totalPares; i++)
             {
-            	if(!visitado[i])
+                if(!visitado[i])
             	{
             		Pair<Pair<R, Integer>, Pair<R, Integer>> par = paresRetangulos.get(i);
-            		if (RTreeIndex.matchNodeType(nodeRtree2))
-                    {
-            			RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
+            	    if (RTreeIndex.matchNodeType(nodeRtree2))
+            	    {
+            	        RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
                         RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
                         intersecao = this.joinUtilities.getGeometry().intersection(par.getSecond().getFirst(), par.getFirst().getFirst());
                         qualifies.add(qualifies.size() - overlap, new Triple<Long, Long, R>(indexRtree1.readSubPageId(par.getFirst().getSecond()), indexRtree2.readSubPageId(par.getSecond().getSecond()), intersecao));
@@ -306,14 +306,14 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                         		}    
                         	}
                         }
-                    }
-            		else
+            	    }
+            	    else
             		{
-                        RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
-                        RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
-                        Uuid uuidRtree1 = leafRtree1.readEntityUuid(paresRetangulos.get(i).getFirst().getSecond());
-                        Uuid uuidRtree2 = leafRtree2.readEntityUuid(paresRetangulos.get(i).getSecond().getSecond());
-                        result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
+            	        RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
+            	        RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
+            	        Uuid uuidRtree1 = leafRtree1.readEntityUuid(paresRetangulos.get(i).getFirst().getSecond());
+            	        Uuid uuidRtree2 = leafRtree2.readEntityUuid(paresRetangulos.get(i).getSecond().getSecond());
+            	        result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
                     }
             	}
             }
