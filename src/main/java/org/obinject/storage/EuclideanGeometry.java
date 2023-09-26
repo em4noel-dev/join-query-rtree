@@ -145,6 +145,7 @@ public class EuclideanGeometry<K extends Rectangle<K> & Entity<? super K>> {
 
         return true;
     }
+    
 
     /**
      *

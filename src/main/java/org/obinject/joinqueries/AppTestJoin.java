@@ -41,11 +41,11 @@ public class AppTestJoin
         System.out.println(new Date());
         int count = 0;
         RectLatLongCoordGeonet metric = new RectLatLongCoordGeonet();
-        String nomeArq = AddFindGeonetRTree.class.getClassLoader().getResource("geonet_simplificado.txt").getFile();
-        String nomeArq2 = AddFindGeonetRTree.class.getClassLoader().getResource("geonet_simplificado.txt").getFile();
+        String nomeArq = AddFindGeonetRTree.class.getClassLoader().getResource("geonet.txt").getFile();
+        String nomeArq2 = AddFindGeonetRTree.class.getClassLoader().getResource("geonet.txt").getFile();
         deleteFiles();
         
-        // Inserção na R-tree 1
+        // Inserï¿½ï¿½o na R-tree 1
         System.out.println("Inserindo na R-tree 1.");
         File workspace = new File("rtreeGeonet1-" + sizeOfNode + ".dat", sizeOfNode);        
         RTree<RectLatLongCoordGeonet> rtree1 = new RTree<RectLatLongCoordGeonet>(workspace){};
@@ -67,7 +67,7 @@ public class AppTestJoin
         in = null;
         System.gc();
         
-        // Inserção na R-tree 2
+        // Inserï¿½ï¿½o na R-tree 2
         System.out.println("Inserindo na R-tree 2.");
         count = 0;
         File workspace2 = new File("rtreeGeonet2-" + sizeOfNode + ".dat", sizeOfNode);
@@ -90,7 +90,7 @@ public class AppTestJoin
         in = null;
         System.gc();
         
-        // Conferência da inserção na R-tree 1
+        // Conferï¿½ncia da inserï¿½ï¿½o na R-tree 1
         System.out.println("Conferindo se todos os dados foram inseridos corretamente na Rtree-1.");
         BufferedReader check = new BufferedReader(new FileReader(nomeArq));
 
@@ -110,10 +110,10 @@ public class AppTestJoin
         check.close();
         
         if(notFound == 0)
-            System.out.println("Todos os dados foram encontrados na Árvore R 1.");
+            System.out.println("Todos os dados foram encontrados na ï¿½rvore R 1.");
         
         
-        // Conferência da inserção na R-tree 2
+        // Conferï¿½ncia da inserï¿½ï¿½o na R-tree 2
         System.out.println("Conferindo se todos os dados foram inseridos corretamente na Rtree-2.");
         check = new BufferedReader(new FileReader(nomeArq2));
 
@@ -133,10 +133,10 @@ public class AppTestJoin
         check.close();
         
         if(notFound == 0)
-            System.out.println("Todos os dados foram encontrados na Árvore R 2.");
+            System.out.println("Todos os dados foram encontrados na ï¿½rvore R 2.");
         
         // Testar Basic Join
-        System.out.println("Realizando o Join Básico entre as duas árvores.");
+        System.out.println("Realizando o Join Bï¿½sico entre as duas ï¿½rvores.");
         JoinQueries<RectLatLongCoordGeonet> joinQuery = new JoinQueries<>(rtree1, rtree2);
         ArrayList<Pair<String, String>> result = joinQuery.basicJoin();
         
@@ -145,8 +145,8 @@ public class AppTestJoin
         for(int i = 0; i < 20; i++)
             System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
         
-        // Testar Basic Join com Restrição do Espaço de Busca
-        System.out.println("\nRealizando o Join Básico com Restrição do Espaço de Busca entre as duas árvores.");
+        // Testar Basic Join com Restriï¿½ï¿½o do Espaï¿½o de Busca
+        System.out.println("\nRealizando o Join Bï¿½sico com Restriï¿½ï¿½o do Espaï¿½o de Busca entre as duas ï¿½rvores.");
         result = joinQuery.basicJoinRestringindoEspacoBusca();
         
         System.out.println("result.size(): " + result.size() + "\n");
@@ -157,6 +157,15 @@ public class AppTestJoin
         // Testar Join plane sweep order
         System.out.println("\nRealizando o Join local sweep order.");
         result = joinQuery.joinPlaneSweep();
+        
+        System.out.println("result.size(): " + result.size() + "\n");
+        System.out.println("20 primeiras linhas de result: ");
+        for(int i = 0; i < 20; i++)
+            System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
+        
+        // Testar Join plane sweep order com fixaÃ§Ã£o
+        System.out.println("\nRealizando o Join local sweep order com fixaÃ§Ã£o.");
+        result = joinQuery.joinPlaneSweepFixacao();
         
         System.out.println("result.size(): " + result.size() + "\n");
         System.out.println("20 primeiras linhas de result: ");
