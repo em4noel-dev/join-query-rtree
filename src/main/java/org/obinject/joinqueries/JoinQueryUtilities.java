@@ -9,12 +9,12 @@ import org.obinject.storage.EuclideanGeometry;
 
 public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>> 
 {
-	private EuclideanGeometry<R> geometry;
+    private EuclideanGeometry<R> geometry;
 
-	public JoinQueryUtilities(EuclideanGeometry<R> geometry)
-	{
-	    this.geometry = geometry;
-	}
+    public JoinQueryUtilities(EuclideanGeometry<R> geometry)
+    {
+        this.geometry = geometry;
+    }
 	
     public ArrayList<Pair<R, Integer>> restringirEspacoBusca(R intersecao, RTreeNode<R> nodeRtree)
     {
