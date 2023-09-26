@@ -308,7 +308,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                         }
                     }
             		else
-                    {
+            		{
                         RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
                         RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
                         Uuid uuidRtree1 = leafRtree1.readEntityUuid(paresRetangulos.get(i).getFirst().getSecond());

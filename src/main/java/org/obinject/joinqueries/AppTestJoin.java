@@ -53,14 +53,14 @@ public class AppTestJoin
         
         while(in.ready() == true)
         {
-            StringTokenizer tok = new StringTokenizer(in.readLine(), "\t");
-            tok.nextToken();
-            metric.setOrigin(0, Double.parseDouble(tok.nextToken()));
-            metric.setOrigin(1, Double.parseDouble(tok.nextToken()));
-            rtree1.add(metric);
-            
-            if(count++ % 1000 == 0) 
-                System.out.println(count);
+	        StringTokenizer tok = new StringTokenizer(in.readLine(), "\t");
+	        tok.nextToken();
+	        metric.setOrigin(0, Double.parseDouble(tok.nextToken()));
+	        metric.setOrigin(1, Double.parseDouble(tok.nextToken()));
+	        rtree1.add(metric);
+	        
+	        if(count++ % 1000 == 0) 
+	        	System.out.println(count);
         }
         
         in.close();
