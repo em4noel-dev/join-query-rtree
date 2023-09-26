@@ -149,7 +149,6 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                         }
                         else
                         {
-                            
                             RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
                             RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
                             Uuid uuidRtree1 = leafRtree1.readEntityUuid(entradasRtree1.get(j).getSecond());
@@ -235,7 +234,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         
         do
         {
-        	Triple<Long, Long, R> trio = qualifies.pop();
+            Triple<Long, Long, R> trio = qualifies.pop();
             pageId1 = trio.getFirst();
             pageId2 = trio.getSecond();
             intersecao = trio.getThird();
@@ -284,13 +283,13 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                         {
                             for(int j = i + 1; j < paresRetangulos.size(); j++)
                             {
-                        	    if(!visitado[j] && par.getFirst() == paresRetangulos.get(j).getFirst())
-                        	    {
-                        	        intersecao = this.joinUtilities.getGeometry().intersection(par.getFirst().getFirst(), paresRetangulos.get(j).getSecond().getFirst());
-                        	        qualifies.add(qualifies.size() - overlap, new Triple<Long, Long, R>(indexRtree1.readSubPageId(par.getFirst().getSecond()), indexRtree2.readSubPageId(paresRetangulos.get(j).getSecond().getSecond()), intersecao));
-                        	        overlap++;
-                        	        visitado[j] = true;               
-                        	    }
+                                if(!visitado[j] && par.getFirst() == paresRetangulos.get(j).getFirst())
+                                {
+                                    intersecao = this.joinUtilities.getGeometry().intersection(par.getFirst().getFirst(), paresRetangulos.get(j).getSecond().getFirst());
+                                    qualifies.add(qualifies.size() - overlap, new Triple<Long, Long, R>(indexRtree1.readSubPageId(par.getFirst().getSecond()), indexRtree2.readSubPageId(paresRetangulos.get(j).getSecond().getSecond()), intersecao));
+                                    overlap++;
+                                    visitado[j] = true;               
+                                }
                             }
                         }
                         else
@@ -298,12 +297,12 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                             for(int k = i + 1; k < paresRetangulos.size(); k++)
                             {
                                 if(!visitado[k] && par.getSecond() == paresRetangulos.get(k).getSecond())
-                        	    {                        			
+                                {                        			
                                     intersecao = this.joinUtilities.getGeometry().intersection(par.getSecond().getFirst(), paresRetangulos.get(k).getFirst().getFirst());
                                     qualifies.add(qualifies.size() - overlap, new Triple<Long, Long, R>(indexRtree1.readSubPageId(paresRetangulos.get(k).getFirst().getSecond()), indexRtree2.readSubPageId(par.getSecond().getSecond()), intersecao));
                                     overlap++;
                                     visitado[k] = true;               
-                        	    }    
+                                }    
                             }
                         }
             	    }
