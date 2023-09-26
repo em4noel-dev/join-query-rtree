@@ -25,152 +25,128 @@ public class AppTestJoin
         if(arquivo.exists())
         {
             arquivo.delete();
-            System.out.println("Arquivo rtreGeonet1 deletado.");
+            System.out.println("File " + "rtreeGeonet1-" + sizeOfNode + ".dat" + " deleted.");
         }
         
         arquivo = new java.io.File("rtreeGeonet2-" + sizeOfNode + ".dat");
         if(arquivo.exists())
         {
             arquivo.delete();
-            System.out.println("Arquivo rtreGeonet2 deletado.");
+            System.out.println("File " + "rtreeGeonet2-" + sizeOfNode + ".dat" + " deleted.");
         }
     }
     
-    public static void main(String[] args) throws FileNotFoundException, IOException
+    public static RTree<RectLatLongCoordGeonet> inserirGeoNetRtree(String nomeArquivo, String preixoArquivoArvore) throws FileNotFoundException, IOException
     {
-        System.out.println(new Date());
-        int count = 0;
+        String file = AddFindGeonetRTree.class.getClassLoader().getResource(nomeArquivo).getFile();
         RectLatLongCoordGeonet metric = new RectLatLongCoordGeonet();
-        String nomeArq = AddFindGeonetRTree.class.getClassLoader().getResource("geonet.txt").getFile();
-        String nomeArq2 = AddFindGeonetRTree.class.getClassLoader().getResource("geonet.txt").getFile();
-        deleteFiles();
-        
-        // Inser��o na R-tree 1
-        System.out.println("Inserindo na R-tree 1.");
-        File workspace = new File("rtreeGeonet1-" + sizeOfNode + ".dat", sizeOfNode);        
+        File workspace = new File(preixoArquivoArvore + "-" + sizeOfNode + ".dat", sizeOfNode);
         RTree<RectLatLongCoordGeonet> rtree1 = new RTree<RectLatLongCoordGeonet>(workspace){};
-        BufferedReader in = new BufferedReader(new FileReader(nomeArq));
+        BufferedReader in = new BufferedReader(new FileReader(file));
+        int count = 0;
         
         while(in.ready() == true)
-        {
-	        StringTokenizer tok = new StringTokenizer(in.readLine(), "\t");
-	        tok.nextToken();
-	        metric.setOrigin(0, Double.parseDouble(tok.nextToken()));
-	        metric.setOrigin(1, Double.parseDouble(tok.nextToken()));
-	        rtree1.add(metric);
-	        
-	        if(count++ % 1000 == 0) 
-	        	System.out.println(count);
-        }
-        
-        in.close();
-        in = null;
-        System.gc();
-        
-        // Inser��o na R-tree 2
-        System.out.println("Inserindo na R-tree 2.");
-        count = 0;
-        File workspace2 = new File("rtreeGeonet2-" + sizeOfNode + ".dat", sizeOfNode);
-        RTree<RectLatLongCoordGeonet> rtree2 = new RTree<RectLatLongCoordGeonet>(workspace2){};
-        in = new BufferedReader(new FileReader(nomeArq2));
-      
-        while (in.ready() == true)
         {
             StringTokenizer tok = new StringTokenizer(in.readLine(), "\t");
             tok.nextToken();
             metric.setOrigin(0, Double.parseDouble(tok.nextToken()));
             metric.setOrigin(1, Double.parseDouble(tok.nextToken()));
-            rtree2.add(metric);
+            rtree1.add(metric);
             
-            if(count++ % 1000 == 0) 
-                System.out.println(count);
+            if(count++ % 50000 == 0) 
+                System.out.print(count + " ");
         }
         
         in.close();
         in = null;
         System.gc();
-        
-        // Confer�ncia da inser��o na R-tree 1
-        System.out.println("Conferindo se todos os dados foram inseridos corretamente na Rtree-1.");
-        BufferedReader check = new BufferedReader(new FileReader(nomeArq));
+        return rtree1;
+    }
+    
+    public static boolean conferirInsercaoGeoNetRtree(String nomeArquivo, RTree<RectLatLongCoordGeonet> rtree) throws FileNotFoundException, IOException
+    {
+        String file = AddFindGeonetRTree.class.getClassLoader().getResource(nomeArquivo).getFile();
+        RectLatLongCoordGeonet metric = new RectLatLongCoordGeonet();
+        BufferedReader check = new BufferedReader(new FileReader(file));
 
         int notFound = 0;
-        count = 0;
-
         while (check.ready() == true)
         {
             StringTokenizer tok = new StringTokenizer(check.readLine(), "\t");
             tok.nextToken();
             metric.setOrigin(0, Double.parseDouble(tok.nextToken()));
             metric.setOrigin(1, Double.parseDouble(tok.nextToken()));
-            if (rtree1.find(metric) == null)
+            if (rtree.find(metric) == null)
                 notFound++;
         }
 
-        check.close();
+        check.close();      
+        return notFound == 0;
+    }
+    
+    public static void main(String[] args) throws Exception
+    {
+        String nomeArquivoDados1 = "geonet.txt";
+        String nomeArquivoDados2 = "geonet.txt";
         
-        if(notFound == 0)
-            System.out.println("Todos os dados foram encontrados na �rvore R 1.");
+        System.out.println(new Date());
+        deleteFiles();
         
+        // Insert in R-tree 1
+        System.out.println("\nInserting data into the first r-tree.");
+        RTree<RectLatLongCoordGeonet> rtree1 = inserirGeoNetRtree(nomeArquivoDados1, "rtreeGeonet1");
         
-        // Confer�ncia da inser��o na R-tree 2
-        System.out.println("Conferindo se todos os dados foram inseridos corretamente na Rtree-2.");
-        check = new BufferedReader(new FileReader(nomeArq2));
-
-        notFound = 0;
-        count = 0;
-
-        while (check.ready() == true)
-        {
-            StringTokenizer tok = new StringTokenizer(check.readLine(), "\t");
-            tok.nextToken();
-            metric.setOrigin(0, Double.parseDouble(tok.nextToken()));
-            metric.setOrigin(1, Double.parseDouble(tok.nextToken()));
-            if (rtree2.find(metric) == null)
-                notFound++;
-        }
-
-        check.close();
+        // Insert in R-tree 1
+        System.out.println("\n\nInserting data into the second r-tree.");
+        RTree<RectLatLongCoordGeonet> rtree2 = inserirGeoNetRtree(nomeArquivoDados2, "rtreeGeonet2");
         
-        if(notFound == 0)
-            System.out.println("Todos os dados foram encontrados na �rvore R 2.");
+        // Check if all the data has been stored correctly.
+        System.out.println("\n\nChecking if all the data has been stored correctly.");
+        if(conferirInsercaoGeoNetRtree(nomeArquivoDados1, rtree1))
+            System.out.println("All data was found in rtree1.");
+        else
+            System.err.println("There are missing data in rtree1.");
         
-        // Testar Basic Join
-        System.out.println("Realizando o Join B�sico entre as duas �rvores.");
+        if(conferirInsercaoGeoNetRtree(nomeArquivoDados2, rtree2))
+            System.out.println("All data was found in rtree2.");
+        else
+            System.err.println("There are missing data in rtree2.");
+        
+        // Print tree heights (they should be equal).
+        System.out.println("\nRtree1 height: " + rtree1.height());
+        System.out.println("Rtree2 height: " + rtree2.height() + "\n");
+        
+        // Initialization for the join
         JoinQueries<RectLatLongCoordGeonet> joinQuery = new JoinQueries<>(rtree1, rtree2);
-        ArrayList<Pair<String, String>> result = joinQuery.basicJoin();
+        ArrayList<Pair<String, String>> result;
         
+        // Test basic Join
+        System.out.println("Basic join: ");
+        result = joinQuery.basicJoin();
         System.out.println("result.size(): " + result.size() + "\n");
-        System.out.println("20 primeiras linhas de result: ");
-        for(int i = 0; i < 20; i++)
-            System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
         
-        // Testar Basic Join com Restri��o do Espa�o de Busca
-        System.out.println("\nRealizando o Join B�sico com Restri��o do Espa�o de Busca entre as duas �rvores.");
+        // Test basic join restricting the search space
+        System.out.println("Basic join restricting the search space: ");
         result = joinQuery.basicJoinRestringindoEspacoBusca();
-        
         System.out.println("result.size(): " + result.size() + "\n");
-        System.out.println("20 primeiras linhas de result: ");
-        for(int i = 0; i < 20; i++)
-            System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
         
-        // Testar Join plane sweep order
-        System.out.println("\nRealizando o Join local sweep order.");
+        // Test local plane-sweep order join
+        System.out.println("Local plane-sweep order join: ");
         result = joinQuery.joinPlaneSweep();
-        
         System.out.println("result.size(): " + result.size() + "\n");
-        System.out.println("20 primeiras linhas de result: ");
-        for(int i = 0; i < 20; i++)
-            System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
         
-        // Testar Join plane sweep order com fixação
-        System.out.println("\nRealizando o Join local sweep order com fixação.");
+        // Test local plane-sweep order join with pinning
+        System.out.println("Local plane-sweep order join with pinning: ");
         result = joinQuery.joinPlaneSweepFixacao();
-        
         System.out.println("result.size(): " + result.size() + "\n");
-        System.out.println("20 primeiras linhas de result: ");
-        for(int i = 0; i < 20; i++)
-            System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());
-               
+                
+        // Test local z-order join
+        // System.out.println("Local z-order join: ");
+        // result = joinQuery.joinZorder();
+        // System.out.println("result.size(): " + result.size() + "\n");
+   
+        // System.out.println("20 primeiras linhas de result: ");
+        // for(int i = 0; i < 20; i++)
+        //     System.out.println(result.get(i).getFirst() + " " + result.get(i).getSecond());         
     }
 }

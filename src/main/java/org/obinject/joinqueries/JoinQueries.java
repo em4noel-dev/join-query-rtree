@@ -23,9 +23,11 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
     private RTreeDescriptor descriptor1, descriptor2;
     private JoinQueryUtilities<R> joinUtilities;
     
-    // Ambas devem ter a mesma altura.
-    public JoinQueries(RTree<R> rtree1, RTree<R> rtree2) 
+    public JoinQueries(RTree<R> rtree1, RTree<R> rtree2) throws Exception 
     {
+        if(rtree1.height() != rtree2.height())
+            throw new Exception("The trees should have the same height.");
+            
         this.rtree1 = rtree1;
         this.rtree2 = rtree2;
         setup();
