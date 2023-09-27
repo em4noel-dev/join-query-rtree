@@ -13,8 +13,6 @@ import org.obinject.sbbd2013.geonet.AddFindGeonetRTree;
 import org.obinject.sbbd2013.geonet.RectLatLongCoordGeonet;
 import org.obinject.storage.RTree;
 
-
-
 public class AppTestJoin 
 {
     private static final int sizeOfNode = 16384;
@@ -86,8 +84,8 @@ public class AppTestJoin
     
     public static void main(String[] args) throws Exception
     {
-        String nomeArquivoDados1 = "geonet.txt";
-        String nomeArquivoDados2 = "geonet.txt";
+        String nomeArquivoDados1 = "geonet_simplificado.txt";
+        String nomeArquivoDados2 = "geonet_simplificado.txt";
         
         System.out.println(new Date());
         deleteFiles();
@@ -100,7 +98,7 @@ public class AppTestJoin
         System.out.println("\n\nInserting data into the second r-tree.");
         RTree<RectLatLongCoordGeonet> rtree2 = inserirGeoNetRtree(nomeArquivoDados2, "rtreeGeonet2");
         
-        // Check if all the data has been stored correctly.
+        // Check if all the data has been stored correctly. 34051
         System.out.println("\n\nChecking if all the data has been stored correctly.");
         if(conferirInsercaoGeoNetRtree(nomeArquivoDados1, rtree1))
             System.out.println("All data was found in rtree1.");
@@ -119,6 +117,8 @@ public class AppTestJoin
         // Initialization for the join
         JoinQueries<RectLatLongCoordGeonet> joinQuery = new JoinQueries<>(rtree1, rtree2);
         ArrayList<Pair<String, String>> result;
+        
+        System.out.println("Size of buffer LRU: " + JoinQueries.sizeOfBuffer + " disk pages.\n");
         
         // Test basic Join
         System.out.println("Basic join: ");
