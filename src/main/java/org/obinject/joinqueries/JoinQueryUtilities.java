@@ -7,16 +7,37 @@ import org.obinject.meta.Entity;
 import org.obinject.meta.Rectangle;
 import org.obinject.storage.EuclideanGeometry;
 
+/**
+ * Classe que implementa métodos utilizados pelos algoritmos de junção.
+ * 
+ * @author Luiz Emanoel Batista Moreira <emanoel@unifei.edu.br>
+ * @author Joao Tonet
+ * @author Joao Victor
+ * @author Luiz Olmes Carvalho <olmes@unifei.edu.br>
+ * @author Enzo Seraphim <seraphim@unifei.edu.br>
+ */
 public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>> 
 {
     private EuclideanGeometry<R> geometry;
-    private long comparisons;
-
+    private long comparisons; // Variável utilizada para contar o número de interseções calculadas
+    
+    /*
+     * Construtor que recebe duas Árvores R de mesma altura que serão utilizadas nas operações de junção.
+     * 
+     * @param geometry Objeto EuclideanGeometry que realiza cálculos de interseção entre MBRs.
+     * */
     public JoinQueryUtilities(EuclideanGeometry<R> geometry)
     {
         this.geometry = geometry;
     }
 	
+    /*
+     * Método que filtra os MBRs de um nó que realizam interseção com um retângulo dado.
+     * 
+     * @param intersecao Retângulo de interseção.
+     * @param nodeRtree  Nó de uma árvore R.
+     * @return Lista de pares. Cada par é formado por um MBR e sua posição no seu nó de origem.
+     */
     public ArrayList<Pair<R, Integer>> restringirEspacoBusca(R intersecao, RTreeNode<R> nodeRtree)
     {
         ArrayList<Pair<R, Integer>> entradasRtree = new ArrayList<>();
@@ -32,7 +53,24 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         
         return entradasRtree;
     }
-        
+    
+    /*
+     * Método que realiza o algoritmo plane-sweep. Primeiramente é realizado uma ordenação 
+     * dos MBRs pelo seus valores "x lower". Posteriormente, é feita uma varredura espacial 
+     * para encontrar todos os retângulos que se interceptam de forma eficiente. Caso o parâmetro 
+     * boolean for verdadeiro, a função calcula o valor unidimensional z-order. Baseado no 
+     * algoritmo "SortedIntersectionTest" de Brinkhoff. 
+     * 
+     * @param mbrsRtree1 Lista de Pares. Cada par é formado por um MBR e sua posição no seu nó de origem (rtree2).
+     * @param mbrsRtree2 Lista de Pares. Cada par é formado por um MBR e sua posição no seu nó de origem (rtree1).
+     * @param zorder Valor booleano que se verdadeiro, o método calcula o valor unidimensional utilizado pelo z-oder.
+     * 
+     * @return Lista de trios. Cada trio é constituído por três pares.
+     *         O primeiro par é composto por um MBR e sua posição no seu nó de origem (rtree1).
+     *         O segundo par é composto por um MBR e sua posição no seu nó de origem (rtree2).
+     *         O terceiro par é composto pelo retângulo de interseção entre os dois MBRs e seu
+     *         respectivo valor unidimensional utilizado no z-order.
+     */
     public ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>>> planeSweep(ArrayList<Pair<R, Integer>> mbrsRtree1, ArrayList<Pair<R, Integer>> mbrsRtree2, boolean zorder)
     {
         int totalEntries1 = mbrsRtree1.size();
@@ -63,6 +101,16 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         return saida;
     }
     
+    /*
+     * Baseado no algoritmo "InternatLoop" de Brinkhoff.
+     * 
+     *  @param t
+     *  @param naoMarcado 
+     *  @param rs 
+     *  @param saida Lista de trios que será o retorno da função "planeSweep"
+     *  @param primeiroLoop Valor boolean utilizado para inserir de forma ordenada na lista "saida".
+     *  @param zorder Valor booleano que se verdadeiro, o método calcula o valor unidimensional utilizado pelo z-oder.
+     */
     private void loopInterno(Pair<R, Integer> t, int naoMarcado, ArrayList<Pair<R, Integer>> rs, ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>>> saida, boolean primeiroLoop, boolean zorder)
     {
         int k = naoMarcado;
@@ -107,6 +155,18 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         }
     }
     
+    /*
+     * Método que recebe um retângulo multidimensional e retorna um valor unidimensional que representa
+     * seu ponto central. É com base nesse valor que o z-order é realizado. Esse valor é construído a 
+     * partir da alternancia dos bits das coordenadas do ponto central.
+     * 
+     * Observação: O ideal é que o ponto central possua coordenadas positivas e inteiras. Caso não possuir,
+     * então o valor é truncado e retirado seu sinal.
+     * 
+     * @param intersecao  Retângulo multidimensional.
+     * @param dims Número de dimensões do retângulo.
+     * @return Valor unidimensional que representa o ponto central do retângulo multidimensional.
+     * */
     private Long zOrder(R intersecao, int dims) 
     {
         Long resultado = 0L;

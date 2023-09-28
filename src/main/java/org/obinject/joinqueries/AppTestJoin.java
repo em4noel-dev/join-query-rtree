@@ -134,9 +134,9 @@ public class AppTestJoin
         System.out.println("Size of buffer LRU: " + JoinQueries.sizeOfBuffer + " disk pages.\n");
         
         // Test basic Join
-        System.out.println("Basic join: ");
-        result = joinQuery.basicJoin();
-        System.out.println("result.size(): " + result.size() + "\n");
+//        System.out.println("Basic join: ");
+//        result = joinQuery.basicJoin();
+//        System.out.println("result.size(): " + result.size() + "\n");
         
         // Test basic join restricting the search space
         System.out.println("Basic join restricting the search space: ");
