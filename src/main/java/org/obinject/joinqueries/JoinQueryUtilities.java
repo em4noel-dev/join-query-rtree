@@ -10,6 +10,7 @@ import org.obinject.storage.EuclideanGeometry;
 public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>> 
 {
     private EuclideanGeometry<R> geometry;
+    private long comparisons;
 
     public JoinQueryUtilities(EuclideanGeometry<R> geometry)
     {
@@ -32,7 +33,7 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         return entradasRtree;
     }
         
-    public ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> planeSweep(ArrayList<Pair<R, Integer>> mbrsRtree1, ArrayList<Pair<R, Integer>> mbrsRtree2, boolean zorder)
+    public ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>>> planeSweep(ArrayList<Pair<R, Integer>> mbrsRtree1, ArrayList<Pair<R, Integer>> mbrsRtree2, boolean zorder)
     {
         int totalEntries1 = mbrsRtree1.size();
         int totalEntries2 = mbrsRtree2.size();
@@ -43,7 +44,7 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         mbrsRtree1.sort((o1, o2) -> Double.compare(o1.getFirst().getOrigin(0), o2.getFirst().getOrigin(0)));
         mbrsRtree2.sort((o1, o2) -> Double.compare(o1.getFirst().getOrigin(0), o2.getFirst().getOrigin(0)));
 
-        ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> saida = new ArrayList<>();
+        ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>>> saida = new ArrayList<>();
 
         while(i < totalEntries1 && j < totalEntries2)
         {
@@ -62,7 +63,7 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         return saida;
     }
     
-    private void loopInterno(Pair<R, Integer> t, int naoMarcado, ArrayList<Pair<R, Integer>> rs, ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> saida, boolean primeiroLoop, boolean zorder)
+    private void loopInterno(Pair<R, Integer> t, int naoMarcado, ArrayList<Pair<R, Integer>> rs, ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>>> saida, boolean primeiroLoop, boolean zorder)
     {
         int k = naoMarcado;
         int totalEntries = rs.size();
@@ -71,6 +72,7 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
         
         while(k < totalEntries && rs.get(k).getFirst().getOrigin(0) <= t_xu)
         {
+            this.comparisons++;
             int dims = t.getFirst().numberOfDimensions();
             Boolean interceptaTodasDimensoes = true;
             
@@ -90,20 +92,16 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
                 
             if(interceptaTodasDimensoes)
             {
-                Long zOrderUnidimensional;
-                if(zorder)
-                {
-                    zOrderUnidimensional = 0L;
-                    R intersecao = this.geometry.intersection(t.getFirst(), rs.get(k).getFirst());
-                    zOrderUnidimensional = zOrder(intersecao, dims);
-                }
-                else
-                    zOrderUnidimensional = null;
+                Long zOrderUnidimensional = null;
+                R intersecao = this.geometry.intersection(t.getFirst(), rs.get(k).getFirst());
                 
+                if(zorder)
+                    zOrderUnidimensional = zOrder(intersecao, dims);
+
                 if(primeiroLoop)
-                    saida.add(new Triple<>(t, rs.get(k), zOrderUnidimensional));
+                    saida.add(new Triple<>(t, rs.get(k), new Pair<>(intersecao, zOrderUnidimensional)));
                 else
-                    saida.add(new Triple<>(rs.get(k), t, zOrderUnidimensional));
+                    saida.add(new Triple<>(rs.get(k), t, new Pair<>(intersecao, zOrderUnidimensional)));
             }
             k++;
         }
@@ -134,5 +132,15 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
     public void setGeometry(EuclideanGeometry<R> geometry) 
     {
         this.geometry = geometry;
+    }
+
+    public long getComparisons() 
+    {
+        return comparisons;
+    }
+
+    public void setComparisons(long comparisons) 
+    {
+        this.comparisons = comparisons;
     }
 }

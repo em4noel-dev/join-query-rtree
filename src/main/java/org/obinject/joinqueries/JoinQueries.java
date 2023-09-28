@@ -14,9 +14,19 @@ import org.obinject.meta.Rectangle;
 import org.obinject.meta.Uuid;
 import org.obinject.storage.RTree;
 
+/**
+ * Classe que implementa cinco diferentes metodos de juncao entre
+ * duas Arvores R propostos no trabalho de Brinkhoff. <p/>
+ * 
+ * @author Luiz Emanoel Batista Moreira <emanoel@unifei.edu.br>
+ * @author Joao Tonet
+ * @author Joao Victor
+ * @author Luiz Olmes Carvalho <olmes@unifei.edu.br>
+ * @author Enzo Seraphim <seraphim@unifei.edu.br>
+ */
 public class JoinQueries<R extends Rectangle<R> & Entity<? super R>> 
 {
-    public static int sizeOfBuffer = 128; // Em quantidade de páginas 
+    public static int sizeOfBuffer = 8; // Em quantidade de páginas 
     
     private RTree<R> rtree1;
     private RTree<R> rtree2;
@@ -25,6 +35,13 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
     private RTreeDescriptor descriptor1, descriptor2;
     private JoinQueryUtilities<R> joinUtilities;
     
+    /*
+     * Construtor que recebe duas Árvores R de mesma altura que serão utilizadas nas operações de junção.
+     * 
+     * @param rtree1 Primeira Árvore R.
+     * @param rtree2 Segunda Árvore R.
+     * @throws Exception Se as árvores tiverem alturas diferentes.
+     * */
     public JoinQueries(RTree<R> rtree1, RTree<R> rtree2) throws Exception 
     {
         if(rtree1.height() != rtree2.height())
@@ -35,6 +52,10 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         setup();
     }
     
+    /*
+     * Método que inicializa Session e RTreeDescriptor para cada árvore.
+     * Também inicializa o atributo joinUtilities.
+     * */
     private void setup()
     {
     	// R-tree 1
@@ -50,9 +71,20 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         joinUtilities = new JoinQueryUtilities<R>(this.rtree1.geometry);
     }
     
-    public ArrayList<Pair<String, String>> basicJoin()
+    /*
+     * Metodo que implementa a abordagem mais básica de join de forma iterativa. 
+     * A ideia é comparar cada entrada de um no da rtree2 com todas as entradas de
+     * um no da rtree1. Baseado no algoritmo "SpatiaLJoin1" de Brinkhoff.
+     * 
+     * @return Lista contendo todos os pares de objetos espaciais (Uuid) que se interceptam.
+     */
+    public ArrayList<Pair<Uuid, Uuid>> basicJoin()
     {
+        // Buffer LRU utilizado para diminuir a leitura de paginas de disco.
         LRUCache bufferLRU = new LRUCache(sizeOfBuffer);
+        
+        // Pilha contendo pares de ID das paginas de discos qualificadas a serem examinadas.
+        // A pilha eh necessaria devido a implementacao iterativa do algoritmo.
         Stack<Pair<Long, Long>> qualifies = new Stack<>();
         qualifies.push(new Pair<Long, Long>(this.descriptor1.readRootPageId(), this.descriptor2.readRootPageId()));
 
@@ -60,10 +92,12 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         long pageId1, pageId2;
         R storedKeyRtree1, storedKeyRtree2;
         
-        ArrayList<Pair<String, String>> result = new ArrayList<>();
+        ArrayList<Pair<Uuid, Uuid>> result = new ArrayList<>();
         
         // Metricas
         long totalDiskAccess = 0;
+        long totalComparisons = 0; // Quantidade de intersecoes e overlaps calculados.
+        long timeStart = System.nanoTime();
         
         do
         {
@@ -71,6 +105,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             pageId1 = pair.getFirst();
             pageId2 = pair.getSecond();
             
+            // Leitura de páginas de disco e utilização do buffer LRU
             Node nodeRtree1 = bufferLRU.get(pageId1 + "-1");
             Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
             
@@ -100,9 +135,10 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                 for (int j = 0; j < totalEntriesRtree1; j++) 
                 {
                     storedKeyRtree1 = gerericNodeRtree1.buildKey(j);
+                    totalComparisons++;
                     if(this.joinUtilities.getGeometry().isOverlap(storedKeyRtree2, storedKeyRtree1)) 
                     {
-                        if (RTreeIndex.matchNodeType(nodeRtree2)) // Entao nodeRtree1 tambem e um no indice.
+                        if (RTreeIndex.matchNodeType(nodeRtree2)) // Entao nodeRtree1 tambem eh um no indice.
                         {
                             RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
                             RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
@@ -115,7 +151,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                             RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
                             Uuid uuidRtree1 = leafRtree1.readEntityUuid(j);
                             Uuid uuidRtree2 = leafRtree2.readEntityUuid(i);
-                            result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
+                            result.add(new Pair<>(uuidRtree1, uuidRtree2));
                         } 
                     }
                 }            
@@ -123,11 +159,13 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         }
         while(!qualifies.isEmpty());
         
+        System.out.println("Time spent (seconds): " + (System.nanoTime() - timeStart) / 1000000000.0);
+        System.out.println("Total Comparisons: " + totalComparisons);
         System.out.println("Total Disk Access: " + totalDiskAccess);
         return result;
     }
     
-    public ArrayList<Pair<String, String>> basicJoinRestringindoEspacoBusca()
+    public ArrayList<Pair<Uuid, Uuid>> basicJoinRestringindoEspacoBusca()
     {      
         LRUCache bufferLRU = new LRUCache(sizeOfBuffer);
         Stack<Triple<Long, Long, R>> qualifies = new Stack<>();
@@ -137,10 +175,12 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         long pageId1, pageId2;
         R storedKeyRtree1, storedKeyRtree2, intersecao;
         
-        ArrayList<Pair<String, String>> result = new ArrayList<>();
+        ArrayList<Pair<Uuid, Uuid>> result = new ArrayList<>();
         
         // Metricas
         long totalDiskAccess = 0;
+        long totalComparisons = 0;
+        long timeStart = System.nanoTime();
         
         do
         {
@@ -180,6 +220,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                 for (int j = 0; j < entradasRtree1.size(); j++) 
                 {
                     storedKeyRtree1 = entradasRtree1.get(j).getFirst();
+                    totalComparisons++;
                     if(this.joinUtilities.getGeometry().isOverlap(storedKeyRtree2, storedKeyRtree1)) 
                     {
                         if (RTreeIndex.matchNodeType(nodeRtree2))
@@ -196,7 +237,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                             RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
                             Uuid uuidRtree1 = leafRtree1.readEntityUuid(entradasRtree1.get(j).getSecond());
                             Uuid uuidRtree2 = leafRtree2.readEntityUuid(entradasRtree2.get(i).getSecond());
-                            result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
+                            result.add(new Pair<>(uuidRtree1, uuidRtree2));
                         }
                     }
                 }            
@@ -204,11 +245,13 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         }
         while(!qualifies.isEmpty());
         
+        System.out.println("Time spent (seconds): " + (System.nanoTime() - timeStart) / 1000000000.0);
+        System.out.println("Total Comparisons: " + totalComparisons);
         System.out.println("Total Disk Access: " + totalDiskAccess);
         return result;
     }
 
-    public ArrayList<Pair<String, String>> joinPlaneSweep()
+    public ArrayList<Pair<Uuid, Uuid>> joinPlaneSweep()
     {        
         LRUCache bufferLRU = new LRUCache(sizeOfBuffer);
         Stack<Triple<Long, Long, R>> qualifies = new Stack<>();
@@ -218,10 +261,12 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         long pageId1, pageId2;
         R intersecao;
         
-        ArrayList<Pair<String, String>> result = new ArrayList<>();
+        ArrayList<Pair<Uuid, Uuid>> result = new ArrayList<>();
         
         // Metricas
         long totalDiskAccess = 0;
+        long totalComparisons = 0;
+        long timeStart = System.nanoTime();
         
         do
         {
@@ -256,7 +301,9 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             ArrayList<Pair<R, Integer>> entradasRtree2 = joinUtilities.restringirEspacoBusca(intersecao, gerericNodeRtree2);
             
             // Aplicando o plane sweep order + Ordenacao
-            ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2, false);
+            joinUtilities.setComparisons(0);
+            ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2, false);
+            totalComparisons += joinUtilities.getComparisons();
             
             for(int i = 0; i < paresRetangulos.size(); i++)
             {
@@ -264,7 +311,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                 {
                     RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
                     RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
-                    intersecao = this.joinUtilities.getGeometry().intersection(paresRetangulos.get(i).getSecond().getFirst(), paresRetangulos.get(i).getFirst().getFirst());
+                    intersecao = paresRetangulos.get(i).getThird().getFirst();
                     qualifies.add(qualifies.size() - overlap, new Triple<Long, Long, R>(indexRtree1.readSubPageId(paresRetangulos.get(i).getFirst().getSecond()), indexRtree2.readSubPageId(paresRetangulos.get(i).getSecond().getSecond()), intersecao));
                     overlap++;
                 }
@@ -274,17 +321,19 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                     RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
                     Uuid uuidRtree1 = leafRtree1.readEntityUuid(paresRetangulos.get(i).getFirst().getSecond());
                     Uuid uuidRtree2 = leafRtree2.readEntityUuid(paresRetangulos.get(i).getSecond().getSecond());
-                    result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
+                    result.add(new Pair<>(uuidRtree1, uuidRtree2));
                 }
             }
         }
         while(!qualifies.isEmpty());
         
+        System.out.println("Time spent (seconds): " + (System.nanoTime() - timeStart) / 1000000000.0);
+        System.out.println("Total Comparisons: " + totalComparisons);
         System.out.println("Total Disk Access: " + totalDiskAccess);
         return result;
     }
     
-    public ArrayList<Pair<String, String>> joinPlaneSweepFixacao()
+    public ArrayList<Pair<Uuid, Uuid>> joinPlaneSweepFixacao()
     {
         LRUCache bufferLRU = new LRUCache(sizeOfBuffer);
         Stack<Triple<Long, Long, R>> qualifies = new Stack<>();
@@ -293,10 +342,12 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         long pageId1, pageId2;
         R intersecao;
         
-        ArrayList<Pair<String, String>> result = new ArrayList<>();
+        ArrayList<Pair<Uuid, Uuid>> result = new ArrayList<>();
         
         // Metricas
         long totalDiskAccess = 0;
+        long totalComparisons = 0;
+        long timeStart = System.nanoTime();
    
         do
         {
@@ -330,7 +381,10 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             ArrayList<Pair<R, Integer>> entradasRtree2 = joinUtilities.restringirEspacoBusca(intersecao, gerericNodeRtree2);
             
             // Aplicando o plane sweep order + Ordena��o
-            ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2, false);
+            joinUtilities.setComparisons(0);
+            ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2, false);
+            totalComparisons += joinUtilities.getComparisons();
+            
             int totalPares = paresRetangulos.size();
             boolean[] visitado = new boolean[totalPares];
                         
@@ -338,12 +392,13 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             {
                 if(!visitado[i])
             	{
-                    Triple<Pair<R, Integer>, Pair<R, Integer>, Long> par = paresRetangulos.get(i);
+                    Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>> par = paresRetangulos.get(i);
             	    if (RTreeIndex.matchNodeType(nodeRtree2))
             	    {
             	        RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
                         RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
-                        intersecao = this.joinUtilities.getGeometry().intersection(par.getSecond().getFirst(), par.getFirst().getFirst());
+                        
+                        intersecao = par.getThird().getFirst();
                         qualifies.add(0, new Triple<Long, Long, R>(indexRtree1.readSubPageId(par.getFirst().getSecond()), indexRtree2.readSubPageId(par.getSecond().getSecond()), intersecao));
                         visitado[i] = true;
                         
@@ -364,7 +419,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                             {
                                 if(!visitado[j] && par.getFirst() == paresRetangulos.get(j).getFirst())
                                 {
-                                    intersecao = this.joinUtilities.getGeometry().intersection(par.getFirst().getFirst(), paresRetangulos.get(j).getSecond().getFirst());
+                                    intersecao = paresRetangulos.get(j).getThird().getFirst();
                                     qualifies.add(0, new Triple<Long, Long, R>(indexRtree1.readSubPageId(par.getFirst().getSecond()), indexRtree2.readSubPageId(paresRetangulos.get(j).getSecond().getSecond()), intersecao));
                                     visitado[j] = true;     
                                 }
@@ -375,8 +430,8 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                             for(int k = i + 1; k < paresRetangulos.size(); k++)
                             {
                                 if(!visitado[k] && par.getSecond() == paresRetangulos.get(k).getSecond())
-                                {                        			
-                                    intersecao = this.joinUtilities.getGeometry().intersection(par.getSecond().getFirst(), paresRetangulos.get(k).getFirst().getFirst());
+                                {
+                                    intersecao = paresRetangulos.get(k).getThird().getFirst();
                                     qualifies.add(0, new Triple<Long, Long, R>(indexRtree1.readSubPageId(paresRetangulos.get(k).getFirst().getSecond()), indexRtree2.readSubPageId(par.getSecond().getSecond()), intersecao));
                                     visitado[k] = true;               
                                 }    
@@ -389,19 +444,21 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             	        RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
             	        Uuid uuidRtree1 = leafRtree1.readEntityUuid(paresRetangulos.get(i).getFirst().getSecond());
             	        Uuid uuidRtree2 = leafRtree2.readEntityUuid(paresRetangulos.get(i).getSecond().getSecond());
-            	        result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
+            	        result.add(new Pair<>(uuidRtree1, uuidRtree2));
                     }
             	}
             }
         }
         while(!qualifies.isEmpty());
         
+        System.out.println("Time spent (seconds): " + (System.nanoTime() - timeStart) / 1000000000.0);
+        System.out.println("Total Comparisons: " + totalComparisons);
         System.out.println("Total Disk Access: " + totalDiskAccess);
         return result;
     }
 
     // Obsevacao em relacao a numeros decimais e negativos.
-    public ArrayList<Pair<String, String>> joinZorder()
+    public ArrayList<Pair<Uuid, Uuid>> joinZorder()
     {
         LRUCache bufferLRU = new LRUCache(sizeOfBuffer);
         Stack<Triple<Long, Long, R>> qualifies = new Stack<>();
@@ -410,10 +467,12 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
         long pageId1, pageId2;
         R intersecao;
         
-        ArrayList<Pair<String, String>> result = new ArrayList<>();
+        ArrayList<Pair<Uuid, Uuid>> result = new ArrayList<>();
         
         // Metricas
         long totalDiskAccess = 0;
+        long totalComparisons = 0;
+        long timeStart = System.nanoTime();
         
         do
         {
@@ -447,10 +506,12 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             ArrayList<Pair<R, Integer>> entradasRtree2 = joinUtilities.restringirEspacoBusca(intersecao, gerericNodeRtree2);
             
             // Aplicando o plane sweep order + Ordenacao
-            ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Long>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2, true);
+            joinUtilities.setComparisons(0);
+            ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>>> paresRetangulos = joinUtilities.planeSweep(entradasRtree1, entradasRtree2, true);
+            totalComparisons += joinUtilities.getComparisons();
             
             // Z-ordering
-            paresRetangulos.sort((o1, o2) -> Long.compare(o1.getThird(), o2.getThird()));
+            paresRetangulos.sort((o1, o2) -> Long.compare(o1.getThird().getSecond(), o2.getThird().getSecond()));
             
             int totalPares = paresRetangulos.size();
             boolean[] visitado = new boolean[totalPares];
@@ -459,12 +520,13 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             {
                 if(!visitado[i])
                 {
-                    Triple<Pair<R, Integer>, Pair<R, Integer>, Long> par = paresRetangulos.get(i);
+                    Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>> par = paresRetangulos.get(i);
                     if (RTreeIndex.matchNodeType(nodeRtree2))
                     {
                         RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
                         RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
-                        intersecao = this.joinUtilities.getGeometry().intersection(par.getSecond().getFirst(), par.getFirst().getFirst());
+
+                        intersecao = par.getThird().getFirst();
                         qualifies.add(0, new Triple<Long, Long, R>(indexRtree1.readSubPageId(par.getFirst().getSecond()), indexRtree2.readSubPageId(par.getSecond().getSecond()), intersecao));
                         visitado[i] = true;
                         
@@ -478,7 +540,6 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                             if(par.getSecond() == paresRetangulos.get(j).getSecond())
                                 grauEntrada2++;             
                         }
-
                         
                         if(grauEntrada1 >= grauEntrada2)
                         {
@@ -486,7 +547,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                             {
                                 if(!visitado[j] && par.getFirst() == paresRetangulos.get(j).getFirst())
                                 {
-                                    intersecao = this.joinUtilities.getGeometry().intersection(par.getFirst().getFirst(), paresRetangulos.get(j).getSecond().getFirst());
+                                    intersecao = paresRetangulos.get(j).getThird().getFirst();
                                     qualifies.add(0, new Triple<Long, Long, R>(indexRtree1.readSubPageId(par.getFirst().getSecond()), indexRtree2.readSubPageId(paresRetangulos.get(j).getSecond().getSecond()), intersecao));
                                     visitado[j] = true;               
                                 }
@@ -497,8 +558,8 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                             for(int k = i + 1; k < paresRetangulos.size(); k++)
                             {
                                 if(!visitado[k] && par.getSecond() == paresRetangulos.get(k).getSecond())
-                                {                                   
-                                    intersecao = this.joinUtilities.getGeometry().intersection(par.getSecond().getFirst(), paresRetangulos.get(k).getFirst().getFirst());
+                                {        
+                                    intersecao = paresRetangulos.get(k).getThird().getFirst();
                                     qualifies.add(0, new Triple<Long, Long, R>(indexRtree1.readSubPageId(paresRetangulos.get(k).getFirst().getSecond()), indexRtree2.readSubPageId(par.getSecond().getSecond()), intersecao));
                                     visitado[k] = true;               
                                 }    
@@ -511,13 +572,15 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                         RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
                         Uuid uuidRtree1 = leafRtree1.readEntityUuid(paresRetangulos.get(i).getFirst().getSecond());
                         Uuid uuidRtree2 = leafRtree2.readEntityUuid(paresRetangulos.get(i).getSecond().getSecond());
-                        result.add(new Pair<String, String>(uuidRtree1.toString(), uuidRtree2.toString()));
+                        result.add(new Pair<>(uuidRtree1, uuidRtree2));
                     }
                 }
             }
         }
         while(!qualifies.isEmpty());
         
+        System.out.println("Time spent (seconds): " + (System.nanoTime() - timeStart) / 1000000000.0);
+        System.out.println("Total Comparisons: " + totalComparisons);
         System.out.println("Total Disk Access: " + totalDiskAccess);
         return result;
     }
