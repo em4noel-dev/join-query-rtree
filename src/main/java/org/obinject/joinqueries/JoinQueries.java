@@ -72,7 +72,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
     }
     
     /*
-     * Método que implementa a abordagem mais básica de join de forma iterativa. 
+     * Método que implementa a abordagem mais básica de join de forma iterativa e em profundidade. 
      * A ideia é comparar cada entrada de um nó da rtree2 com todas as entradas de
      * um nó da rtree1. Baseado no algoritmo "SpatiaLJoin1" de Brinkhoff.
      * 
@@ -166,7 +166,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
     }
     
     /*
-     * Método que utiliza uma restrição no espaco de busca na abordagem básica de join.
+     * Método que utiliza uma restrição no espaco de busca na abordagem básica de join (iterativo e em profundidade).
      * A ideia é comparar somente as entradas dos nós que interceptam a interseção dos seus 
      * MBRs "pais". Baseado no algoritmo "SpatiaLJoin2" de Brinkhoff.
      * 
@@ -266,8 +266,8 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
     /*
      * Método que utiliza o algoritmo de plane-sweep e ordenação espacial na junção.
      * A ideia é ordenar todos os MBRs pelo "x lower" para encontrar todas as interseções
-     * de forma eficiente. Também utiliza a restrição de espaço de busca. Baseado no algoritmo 
-     * "SpatiaLJoin3" de Brinkhoff.
+     * de forma eficiente (iterativo e em profundidade). Também utiliza a restrição 
+     * de espaço de busca. Baseado no algoritmo "SpatiaLJoin3" de Brinkhoff.
      * 
      * @return Lista contendo todos os pares de objetos espaciais (Uuid) que se interceptam.
      */
@@ -359,7 +359,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
     }
     
     /*
-     * Método que aprimora a junção baseada no plane-sweep utilizando uma técnica de fixação. 
+     * Método que aprimora a junção baseada no plane-sweep utilizando uma técnica de fixação (iterativo e em largura). 
      * A ideia é fazer as junções de um MBR com todos os outros que se interceptam com ele, buscando
      * reduzir a quantidade de leitura de páginas de disco necessárias. Baseado no algoritmo 
      * "SpatiaLJoin4" de Brinkhoff.
@@ -499,9 +499,9 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
 
     /*
      * Método que implementa a junção utilizando uma ideia de ordenação espacial 
-     * de pontos conhecida como z-order. Utiliza a restrição de espaço e o algoritmo
-     * de plane-sweep para encontrar as interseções. Baseado no algoritmo "SpatiaLJoin5" 
-     * de Brinkhoff.
+     * de pontos conhecida como z-order (iterativo e em largura). Utiliza a restrição 
+     * de espaço e o algoritmo de plane-sweep para encontrar as interseções. 
+     * Baseado no algoritmo "SpatiaLJoin5" de Brinkhoff.
      * 
      * @return Lista contendo todos os pares de objetos espaciais (Uuid) que se interceptam.
      */
