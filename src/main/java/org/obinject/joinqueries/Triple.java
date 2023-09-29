@@ -1,5 +1,14 @@
 package org.obinject.joinqueries;
 
+/*
+ * Classe utilizada para armazenar três objetos genéricos em forma de trio.
+ * 
+ * @author Luiz Emanoel Batista Moreira <emanoel@unifei.edu.br>
+ * @author Joao Tonet
+ * @author Joao Victor
+ * @author Luiz Olmes Carvalho <olmes@unifei.edu.br>
+ * @author Enzo Seraphim <seraphim@unifei.edu.br>
+ * */
 public class Triple<K, V, X> 
 {
     private K first;

@@ -102,14 +102,16 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
     }
     
     /*
-     * Baseado no algoritmo "InternatLoop" de Brinkhoff.
+     * Método auxiliar para realização do algoritmo plane sweep. Dado um retângulo de um nó de uma rtree,
+     * a função encontra todas as interseções com os retângulos do nó da outra rtree. Baseado no algoritmo 
+     * "InternatLoop" de Brinkhoff.
      * 
-     *  @param t
-     *  @param naoMarcado 
-     *  @param rs 
-     *  @param saida Lista de trios que será o retorno da função "planeSweep"
-     *  @param primeiroLoop Valor boolean utilizado para inserir de forma ordenada na lista "saida".
-     *  @param zorder Valor booleano que se verdadeiro, o método calcula o valor unidimensional utilizado pelo z-oder.
+     * @param t Retângulo de um nó, pode ser da rtee1 ou rtree2.
+     * @param naoMarcado Primeira posição ainda não checada da lista de retângulos.
+     * @param rs Lista de retângulos da outra rtree.
+     * @param saida Lista de trios que será o retorno da função "planeSweep".
+     * @param primeiroLoop Valor boolean utilizado para inserir de forma ordenada na lista "saida".
+     * @param zorder Valor booleano que se verdadeiro, o método calcula o valor unidimensional utilizado pelo z-oder.
      */
     private void loopInterno(Pair<R, Integer> t, int naoMarcado, ArrayList<Pair<R, Integer>> rs, ArrayList<Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>>> saida, boolean primeiroLoop, boolean zorder)
     {
@@ -158,10 +160,10 @@ public class JoinQueryUtilities<R extends Rectangle<R> & Entity<? super R>>
     /*
      * Método que recebe um retângulo multidimensional e retorna um valor unidimensional que representa
      * seu ponto central. É com base nesse valor que o z-order é realizado. Esse valor é construído a 
-     * partir da alternancia dos bits das coordenadas do ponto central.
+     * partir da alternância dos bits das coordenadas do ponto central.
      * 
      * Observação: O ideal é que o ponto central possua coordenadas positivas e inteiras. Caso não possuir,
-     * então o valor é truncado e retirado seu sinal.
+     * o valor é truncado e retirado seu sinal.
      * 
      * @param intersecao  Retângulo multidimensional.
      * @param dims Número de dimensões do retângulo.
