@@ -26,7 +26,7 @@ import org.obinject.storage.RTree;
  */
 public class JoinQueries<R extends Rectangle<R> & Entity<? super R>> 
 {
-    public static int sizeOfBuffer = 8; // Em quantidade de páginas
+    public static int sizeOfBuffer = 32; // Em quantidade de páginas
     
     private RTree<R> rtree1;
     private RTree<R> rtree2;
@@ -58,7 +58,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
      * */
     private void setup()
     {
-    	// R-tree 1
+        // R-tree 1
         this.se1 = this.rtree1.getWorkspace().openSession();
         long pageIdDescriptor1 = se1.findPageIdDescriptor(this.rtree1.getClassUuid());
         this.descriptor1 = new RTreeDescriptor(se1.load(pageIdDescriptor1));
@@ -107,8 +107,6 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             
             // Leitura de páginas de disco e utilização do buffer LRU
             Node nodeRtree1 = bufferLRU.get(pageId1 + "-1");
-            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
-            
             if(nodeRtree1 == null)
             {
                 nodeRtree1 = se1.load(pageId1);
@@ -116,6 +114,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                 totalDiskAccess++;
             }
             
+            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
             if(nodeRtree2 == null)
             {
                 nodeRtree2 = se2.load(pageId2);
@@ -203,8 +202,6 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             
             // Leitura de páginas de disco e utilização do buffer LRU
             Node nodeRtree1 = bufferLRU.get(pageId1 + "-1");
-            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
-            
             if(nodeRtree1 == null)
             {
                 nodeRtree1 = se1.load(pageId1);
@@ -212,6 +209,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                 totalDiskAccess++;
             }
             
+            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
             if(nodeRtree2 == null)
             {
                 nodeRtree2 = se2.load(pageId2);
@@ -303,8 +301,6 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             
             // Leitura de páginas de disco e utilização do buffer LRU
             Node nodeRtree1 = bufferLRU.get(pageId1 + "-1");
-            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
-            
             if(nodeRtree1 == null)
             {
                 nodeRtree1 = se1.load(pageId1);
@@ -312,6 +308,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                 totalDiskAccess++;
             }
             
+            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
             if(nodeRtree2 == null)
             {
                 nodeRtree2 = se2.load(pageId2);
@@ -398,8 +395,6 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             
             // Leitura de páginas de disco e utilização do buffer LRU
             Node nodeRtree1 = bufferLRU.get(pageId1 + "-1");
-            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
-            
             if(nodeRtree1 == null)
             {
                 nodeRtree1 = se1.load(pageId1);
@@ -407,6 +402,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                 totalDiskAccess++;
             }
             
+            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
             if(nodeRtree2 == null)
             {
                 nodeRtree2 = se2.load(pageId2);
@@ -433,11 +429,11 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             for(int i = 0; i < totalPares; i++)
             {
                 if(!visitado[i])
-            	{
+                {
                     Triple<Pair<R, Integer>, Pair<R, Integer>, Pair<R, Long>> par = paresRetangulos.get(i);
-            	    if (RTreeIndex.matchNodeType(nodeRtree2)) // nodeRtree1 e nodeRtree2 são nós índices.
-            	    {
-            	        RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
+                    if (RTreeIndex.matchNodeType(nodeRtree2)) // nodeRtree1 e nodeRtree2 são nós índices.
+                    {
+                        RTreeIndex<R> indexRtree1 = new RTreeIndex<>(nodeRtree1, this.rtree1.getObjectClass());
                         RTreeIndex<R> indexRtree2 = new RTreeIndex<>(nodeRtree2, this.rtree2.getObjectClass());
                         
                         intersecao = par.getThird().getFirst();
@@ -452,7 +448,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                                 grauEntrada1++;
 
                             if(par.getSecond() == paresRetangulos.get(j).getSecond())
-                                grauEntrada2++;            	
+                                grauEntrada2++;             
                         }                        
                         
                         // Definir como pares qualificados aqueles que se interceptam com o MBR de maior grau
@@ -480,16 +476,16 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                                 }    
                             }
                         }
-            	    }
-            	    else // nodeRtree1 e nodeRtree2 são nós folhas.
-            	    {
-            	        RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
-            	        RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
-            	        Uuid uuidRtree1 = leafRtree1.readEntityUuid(paresRetangulos.get(i).getFirst().getSecond());
-            	        Uuid uuidRtree2 = leafRtree2.readEntityUuid(paresRetangulos.get(i).getSecond().getSecond());
-            	        result.add(new Pair<>(uuidRtree1, uuidRtree2));
                     }
-            	}
+                    else // nodeRtree1 e nodeRtree2 são nós folhas.
+                    {
+                        RTreeLeaf<R> leafRtree1 = new RTreeLeaf<>(nodeRtree1, this.rtree1.getObjectClass());
+                        RTreeLeaf<R> leafRtree2 = new RTreeLeaf<>(nodeRtree2, this.rtree2.getObjectClass());
+                        Uuid uuidRtree1 = leafRtree1.readEntityUuid(paresRetangulos.get(i).getFirst().getSecond());
+                        Uuid uuidRtree2 = leafRtree2.readEntityUuid(paresRetangulos.get(i).getSecond().getSecond());
+                        result.add(new Pair<>(uuidRtree1, uuidRtree2));
+                    }
+                }
             }
         }
         while(!qualifies.isEmpty());
@@ -536,10 +532,8 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
             pageId2 = trio.getSecond();
             intersecao = trio.getThird();
             
-            Node nodeRtree1 = bufferLRU.get(pageId1 + "-1");
-            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
-            
             // Leitura de páginas de disco e utilização do buffer LRU
+            Node nodeRtree1 = bufferLRU.get(pageId1 + "-1");
             if(nodeRtree1 == null)
             {
                 nodeRtree1 = se1.load(pageId1);
@@ -547,6 +541,7 @@ public class JoinQueries<R extends Rectangle<R> & Entity<? super R>>
                 totalDiskAccess++;
             }
             
+            Node nodeRtree2 = bufferLRU.get(pageId2 + "-2");
             if(nodeRtree2 == null)
             {
                 nodeRtree2 = se2.load(pageId2);
