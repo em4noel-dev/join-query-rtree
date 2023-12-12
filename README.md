@@ -1,1 +1,3 @@
-Análise de Técnicas de Junção em Espaços Multidimensionais
+AnÃ¡lise de TÃ©cnicas de JunÃ§Ã£o em EspaÃ§os Multidimensionais.
+
+Autor: Luiz Emanoel Batista Moreira
